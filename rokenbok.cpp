@@ -3,12 +3,39 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-#define BAUD 115200
-#include <util/setbaud.h>
+#include <stdio.h>
+
+#define BAUDRATE 9600
+#define BAUD_PRESCALLER (((F_CPU / (BAUDRATE * 16UL))) - 1)
+
+//#include <util/setbaud.h>
 
 volatile bool frame_end = false;
 
 void loop();
+
+void USART_init()
+{
+	UBRR0H = (uint8_t)(BAUD_PRESCALLER >> 8);
+	UBRR0L = (uint8_t)(BAUD_PRESCALLER);
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+	UCSR0C = ((1 << UCSZ00) | (1 << UCSZ01));
+}
+
+void USART_send(uint8_t data)
+{
+	while (!(UCSR0A & (1 << UDRE0)));
+		UDR0 = data;
+}
+
+void USART_putstring(char const* str)
+{
+	while (*str != 0x00)
+	{
+		USART_send(*str);
+		++str;
+	}
+}
 
 bool digital_read(uint8_t pin)
 {
@@ -99,6 +126,8 @@ int main()
 	MCUCR = (1 << ISC01) | (1 << ISC00);
 	EIMSK = (1 << INT0);
 	
+	USART_init();
+	
 	while (true)
 		loop();
 }
@@ -119,19 +148,24 @@ void loop()
 	uint8_t read_byte = 0;
 	for (uint8_t i = 0; i != 8; ++i)
 	{
-		enable_output(data_pins[i], false);
+		//enable_output(data_pins[i], false);
 		read_byte |= digital_read(data_pins[i]) << i;
 	}
 	digital_write(input_enable_pin, true);
 	
+	char str[3] = "";
+	sprintf(str, "%02x", read_byte);
+	USART_putstring(str);
+	USART_putstring("\r\n");
+	
 	// write byte
-	uint8_t write_byte = 0x81;
+	uint8_t write_byte = 0x83;
 	
 	// prepare output byte
 	for (uint8_t i = 0; i != 8; ++i)
 	{
-		enable_output(data_pins[i], true);
-		digital_write(data_pins[i], write_byte & (1 << i));
+		//enable_output(data_pins[i], true);
+		//digital_write(data_pins[i], write_byte & (1 << i));
 	}
 	digital_write(output_load_pin, false);
 	digital_write(output_load_pin, true);
