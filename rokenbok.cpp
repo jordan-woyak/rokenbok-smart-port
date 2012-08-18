@@ -142,8 +142,8 @@ void loop()
 	// read byte
 	digital_write(input_enable_pin, false);
 	
-	// TODO: don't need full ms
-	_delay_ms(1);
+	// seems to need at least 350us
+	_delay_us(500);
 	
 	uint8_t read_byte = 0;
 	for (uint8_t i = 0; i != 8; ++i)
@@ -153,10 +153,12 @@ void loop()
 	}
 	digital_write(input_enable_pin, true);
 	
+	/*
 	char str[3] = "";
 	sprintf(str, "%02x", read_byte);
 	USART_putstring(str);
 	USART_putstring("\r\n");
+	*/
 	
 	// write byte
 	uint8_t write_byte = 0x00;
@@ -195,6 +197,7 @@ void loop()
 	digital_write(output_load_pin, false);
 	digital_write(output_load_pin, true);
 	
+	// seems to be fine up to 7ms
 	//_delay_ms(4);
 	
 	// accio low
@@ -203,6 +206,9 @@ void loop()
 
 ISR (INT0_vect)
 {
+	// seems to be fine up to 500us
+	//_delay_us(300);
+	
 	// make accio high
 	digital_write(accio_pin, true);
 	
