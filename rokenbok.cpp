@@ -22,19 +22,22 @@ void USART_init()
 	UCSR0C = ((1 << UCSZ00) | (1 << UCSZ01));
 }
 
-void USART_send(uint8_t data)
+void USART_putc(uint8_t data)
 {
 	while (!(UCSR0A & (1 << UDRE0)));
 		UDR0 = data;
 }
 
-void USART_putstring(char const* str)
+void USART_puts(char const* str)
 {
 	while (*str != 0x00)
 	{
-		USART_send(*str);
+		USART_putc(*str);
 		++str;
 	}
+	
+	USART_putc('\r');
+	USART_putc('\n');
 }
 
 bool digital_read(uint8_t pin)
@@ -156,8 +159,8 @@ void loop()
 	/*
 	char str[3] = "";
 	sprintf(str, "%02x", read_byte);
-	USART_putstring(str);
-	USART_putstring("\r\n");
+	USART_puts(str);
+	USART_puts("\r\n");
 	*/
 	
 	// write byte
@@ -165,27 +168,27 @@ void loop()
 	
 	if (0xc6 == read_byte)
 	{
-		//Serial.println("presync");
+		//USART_puts("presync");
 		write_byte = 0x81; // sync
 	}
 	else if (0xc7 == read_byte)
 	{
-		//Serial.println("sync");
+		//USART_puts("sync");
 		write_byte = (1 << 0); // <atrib value>
 	}
 	else if (0xc8 == read_byte)
 	{
-		//Serial.println("readattrib");
+		//USART_puts("readattrib");
 		write_byte = 0x01; // <no sel timeout value>
 	}
 	else if (0xcc == read_byte)
 	{
-		//Serial.println("readnoseltimeout");
+		//USART_puts("readnoseltimeout");
 		write_byte = 0x01;
 	}
 	else
 	{
-		//Serial.println(read_byte, HEX); 
+		//USART_puts(read_byte, HEX); 
 	}
 	
 	// prepare output byte
