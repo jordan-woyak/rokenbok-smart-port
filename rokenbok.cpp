@@ -36,7 +36,7 @@ void USART_puts(char const* str)
 		++str;
 	}
 	
-	USART_putc('\r');
+	//USART_putc('\r');
 	USART_putc('\n');
 }
 
@@ -160,7 +160,6 @@ void loop()
 	char str[3] = "";
 	sprintf(str, "%02x", read_byte);
 	USART_puts(str);
-	USART_puts("\r\n");
 	*/
 	
 	// write byte
