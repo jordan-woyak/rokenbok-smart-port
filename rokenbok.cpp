@@ -40,9 +40,9 @@ void USART_putstring(char const* str)
 bool digital_read(uint8_t pin)
 {
 	if (pin < 8)
-		return PORTD & (1 << pin);
+		return PIND & (1 << pin);
 	else
-		return PORTB & (1 << (pin - 8));
+		return PINB & (1 << (pin - 8));
 }
 
 void digital_write(uint8_t pin, bool value)
@@ -84,7 +84,7 @@ void enable_output(uint8_t pin, bool value)
 enum : uint8_t
 {
 	input_enable_pin = 5, // active low
-	output_load_pin = 5, // active low
+	output_load_pin = 4, // active low
 	accio_pin = 3, // active low
 	accio2_pin = 2, // active low
 };
@@ -148,7 +148,7 @@ void loop()
 	uint8_t read_byte = 0;
 	for (uint8_t i = 0; i != 8; ++i)
 	{
-		//enable_output(data_pins[i], false);
+		enable_output(data_pins[i], false);
 		read_byte |= digital_read(data_pins[i]) << i;
 	}
 	digital_write(input_enable_pin, true);
@@ -159,13 +159,38 @@ void loop()
 	USART_putstring("\r\n");
 	
 	// write byte
-	uint8_t write_byte = 0x83;
+	uint8_t write_byte = 0x00;
+	
+	if (0xc6 == read_byte)
+	{
+		//Serial.println("presync");
+		write_byte = 0x81; // sync
+	}
+	else if (0xc7 == read_byte)
+	{
+		//Serial.println("sync");
+		write_byte = (1 << 0); // <atrib value>
+	}
+	else if (0xc8 == read_byte)
+	{
+		//Serial.println("readattrib");
+		write_byte = 0x01; // <no sel timeout value>
+	}
+	else if (0xcc == read_byte)
+	{
+		//Serial.println("readnoseltimeout");
+		write_byte = 0x01;
+	}
+	else
+	{
+		//Serial.println(read_byte, HEX); 
+	}
 	
 	// prepare output byte
 	for (uint8_t i = 0; i != 8; ++i)
 	{
-		//enable_output(data_pins[i], true);
-		//digital_write(data_pins[i], write_byte & (1 << i));
+		enable_output(data_pins[i], true);
+		digital_write(data_pins[i], write_byte & (1 << i));
 	}
 	digital_write(output_load_pin, false);
 	digital_write(output_load_pin, true);
