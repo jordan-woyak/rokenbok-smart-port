@@ -5,6 +5,7 @@
 #include "bit_util.hpp"
 
 // TODO: debug all bytes of edit_select
+// TODO: debug all bytes of bcast_tpads?
 
 /*__attribute__((always_inline))*/ void debug_string(const char* str)
 {
@@ -51,6 +52,18 @@ enum class in_command : uint8_t
 	waitins = 0x83, //?
 };
 
+enum attrib_bit : uint8_t
+{
+	sync = 0, // should be 1 for active accessory
+	notsync = 1, // should be 0 for active accessory (why?)
+	edit_tpads = 2, // request edit_tpads command
+	edit_select = 3, //request edit_select command
+	suppress_select = 4, //disable select buttons (useful in combination with edit_select)
+	pkt_inject = 5,
+	suppress_radio = 6, // disable radio
+	full_rf_null = 7, //
+};
+
 class data_handler
 {
 public:
@@ -81,6 +94,7 @@ public:
 	rokenbok_interface()
 		: thumbpad_button_state{}
 		, active_handler{}
+		, is_synced{}
 	{
 		//active_handler = &main
 	}
@@ -100,26 +114,43 @@ public:
 				debug_string("presync");
 				process_presync(io);
 			}
-			else if (out_command::bcast_tpads == read_cmd)
-			{
-				debug_string("bcast_tpads");
-				//debug_byte(0x00);
-				process_bcast_tpads(io);
-			}
-			else if (out_command::edit_tpads == read_cmd)
-			{
-				debug_string("edit_tpads");
-				process_edit_tpads(io);
-			}
-			else if (out_command::bcast_select == read_cmd)
-			{
-				debug_string("bcast_select");
-				process_bcast_select(io);
-			}
-			else if (out_command::edit_select == read_cmd)
-			{
-				debug_string("edit_select");
-				process_edit_select(io);
+			else if (is_synced)
+			{	
+				if (out_command::bcast_tpads == read_cmd)
+				{
+					debug_string("bcast_tpads");
+					//debug_byte(0x00);
+					process_bcast_tpads(io);
+				}
+				else if (out_command::edit_tpads == read_cmd)
+				{
+					debug_string("edit_tpads");
+					process_edit_tpads(io);
+				}
+				else if (out_command::bcast_select == read_cmd)
+				{
+					debug_string("bcast_select");
+					process_bcast_select(io);
+				}
+				else if (out_command::edit_select == read_cmd)
+				{
+					debug_string("edit_select");
+					process_edit_select(io);
+				}
+				else if (out_command::haveradiopkt == read_cmd)
+				{
+					debug_string("haveradiopkt");
+					process_haveradiopkt(io);
+				}
+				else if (out_command::nullcmd == read_cmd)
+				{
+					debug_string("nullcmd");
+				}
+				else
+				{
+					debug_byte((uint8_t)read_cmd);
+					is_synced = false;
+				}
 			}
 			
 			write_command(io, in_command::nullcmd);
@@ -167,11 +198,17 @@ private:
 		write_command(io, in_command::sync);
 		input_assert(out_command::sync, io.read());
 		
-		io.write((1 << 0) | (1 << 2) | (1 << 4)); // <atrib value>
+		io.write((1 << attrib_bit::sync)
+			| (1 << attrib_bit::suppress_select)
+			| (1 << attrib_bit::edit_tpads)
+			//| (1 << attrib_bit::edit_select)
+		);
 		input_assert(out_command::readattrib, io.read());
 		
 		io.write(0x01); // <no sel timeout value>
 		input_assert(out_command::readnoseltimeout, io.read());
+		
+		is_synced = true;
 	}
 	
 	static const uint8_t tpad_byte_count = 17;
@@ -188,8 +225,17 @@ private:
 		write_command(io, in_command::nullcmd);
 		uint8_t priority_mask = io.read();
 		
-		write_command(io, in_command::nullcmd);
-		input_assert(out_command::bcast_end, io.read());
+		int i = 0;
+		while (true)
+		{
+			++i;
+			write_command(io, in_command::nullcmd);
+			auto end = /*input_assert(out_command::bcast_end, */io.read();//);
+			
+			if (end == (uint8_t)out_command::bcast_end)
+				break;
+		}
+		//debug_byte(i);
 	}
 	
 	template <typename T>
@@ -203,62 +249,31 @@ private:
 		{
 			uint8_t tpad_data = io.read();
 			
+			debug_byte(tpad_data);
+			
 			// OK, having more than 3 bits set in any bytes causes dsync
 			// even when the bits were received as set
 			// TODO: why?
 			
-			// TODO: A & B & !(X | Y | R) causes a desync?
-			
-			//debug_byte(tpad_data);
-			/*
 			if (thumbpad_button::dpad_up == byte)
-				dpad_up = get_bit(tpad_data, 0);
-			
-			else if (thumbpad_button::dpad_left == byte)
-				set_bit(dpad_up, 0, true);
-			
-			//if (0 == byte)
-			//	for (int i = 0; i != 8; ++i)
-			//		set_bit(tpad_data, i, false);
-			*/
-			//if (byte != 16)
-			//	for (int i = 0; i != 8; ++i)
-			//		set_bit(tpad_data, i, false);
-				//for (int i = 4; i != 8; ++i)
-					//set_bit(tpad_data, i, false);
-					
-			//tpad_data &= 0x0f;
-				
-			if (thumbpad_button::dpad_up == byte)
-			{
-				dpad_up = get_bit(tpad_data, 0);
 				tpad_data = 0;
-			}
-			else if (thumbpad_button::dpad_down == byte)
-			{
-				set_bit(tpad_data, 0, dpad_up);
-			}			
-				//tpad_data &= 0xf0;
-			//else
-			tpad_data &= 0x01;
-				
-			//set_bit(tpad_data, 0, false);
 				
 			//if (byte == 16)
-			//	tpad_data = 0x85;
+			tpad_data &= 0x07;
 				
 			io.write(tpad_data);
 		}
 		
 		// TODO: having more than 5 (or 4?) bits in mask set causes desync
+		// zero still allows base to see changes :/
 		
 		uint8_t priority_mask = io.read();
 		//debug_byte(priority_mask);
-		io.write(0x01);
+		io.write(0x00);
 		
 		auto rd = io.read();
 		//debug_byte(rd);
-		input_assert(out_command::bcast_end, rd);
+		input_assert(out_command::edit_end, rd);
 	}
 	
 	static const uint8_t tpad_count = 8;
@@ -266,17 +281,25 @@ private:
 	template <typename T>
 	void process_bcast_select(T&& io)
 	{
+		//debug_byte(0x00);
 		for (uint8_t byte = 0; byte != tpad_count; ++byte)
 		{
 			write_command(io, in_command::nullcmd);
 			uint8_t selection = io.read();
+			//debug_byte(selection);
 		}
 		
 		write_command(io, in_command::nullcmd);
-		uint8_t timer_value = io.read();
+		uint8_t const timer_value = io.read();
 		
-		write_command(io, in_command::nullcmd);
-		input_assert(out_command::bcast_end, io.read());
+		while (true)
+		{
+			write_command(io, in_command::nullcmd);
+			auto end = /*input_assert(out_command::bcast_end, */io.read();//);
+			
+			if (end == (uint8_t)out_command::bcast_end)
+				break;
+		}
 	}
 	
 	template <typename T>
@@ -284,19 +307,38 @@ private:
 	{
 		write_command(io, in_command::vfyedit);
 		
-		uint8_t const force_selection = 3;
+		uint8_t const force_selection = 7;
 		for (uint8_t byte = 0; byte != tpad_count; ++byte)
 		{
 			uint8_t selection = io.read();
-			io.write(force_selection);
+			if (0 == byte)
+				selection = force_selection;
+			io.write(selection);
 		}
 		
-		uint8_t timer_value = io.read();
+		uint8_t const timer_value = io.read();
 		// TODO: changing this seems to have no effect
 		// it's probably ignored (should be nullcmd)
 		io.write(timer_value);
 		
-		input_assert(out_command::bcast_end, io.read());
+		input_assert(out_command::edit_end, io.read());
+	}
+	
+	template <typename T>
+	void process_haveradiopkt(T&& io)
+	{
+		//debug_byte(0xbe);
+		uint8_t radiopkt = ~0x00;
+		
+		// seems to only work with 2
+		for (int i = 0; i != 2; ++i)//radiopkt != 0x00)
+		{
+			write_command(io, in_command::nullcmd);
+			radiopkt = io.read();
+			//debug_byte(radiopkt);
+		}
+		
+		//debug_byte(0xbd);
 	}
 	
 	template <typename T>
@@ -313,8 +355,15 @@ private:
 	
 	void input_assert(out_command cmd, uint8_t val)
 	{
-		//if ((uint8_t)cmd != val)
-			//...
+		// TODO: also need to break out of presync I think
+		
+		if ((uint8_t)cmd != val)
+		{
+			is_synced = false;
+			debug_byte(0xcc);
+			debug_byte((uint8_t)cmd);
+			debug_byte(val);
+		}
 	}
 	
 	static const uint8_t thumbpad_button_count = 17;
@@ -322,6 +371,8 @@ private:
 	uint8_t thumbpad_button_state[thumbpad_button_count];
 	
 	data_handler* active_handler;
+	
+	bool is_synced;
 	
 	// TODO: var names
 	//main_handler main;
