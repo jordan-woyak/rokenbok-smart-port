@@ -7,7 +7,7 @@
 #include <util/delay.h>
 //#include <util/setbaud.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 //#include <stdlib.h>
 
 #include "usart.hpp"

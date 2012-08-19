@@ -9,6 +9,13 @@ __attribute__((always_inline)) void debug_string(const char* str)
 	//USART_puts(str);
 }
 
+void debug_byte(uint8_t byte)
+{
+	//char str[3] = "";
+	//sprintf(str, "%02x", byte);
+	//USART_puts(str);	
+}
+
 // output: (from control deck)
 enum class out_command : uint8_t
 {
@@ -96,10 +103,18 @@ public:
 				debug_string("bcast_tpads");
 				process_bcast_tpads(io);
 			}
-			else
+			else if (out_command::bcast_select == read_cmd)
 			{
-				write_command(io, in_command::nullcmd);
+				debug_string("bcast_select");
+				process_bcast_select(io);
 			}
+			else if (out_command::edit_select == read_cmd)
+			{
+				debug_string("edit_select");
+				process_edit_select(io);
+			}
+			
+			write_command(io, in_command::nullcmd);
 		}
 	}
 	
@@ -143,24 +158,62 @@ private:
 	{
 		write_command(io, in_command::sync);
 		input_assert(out_command::sync, io.read());
-		io.write((1 << 0) | (1 << 4)); // <atrib value>
+		
+		io.write((1 << 0) | (1 << 3)); // <atrib value>
 		input_assert(out_command::readattrib, io.read());
+		
 		io.write(0x01); // <no sel timeout value>
 		input_assert(out_command::readnoseltimeout, io.read());
-		write_command(io, in_command::nullcmd);
 	}
 	
 	template <typename T>
 	void process_bcast_tpads(T&& io)
-	{/*
-		write_command(io, in_command::sync);
-		input_assert(out_command::sync, io.read());
-		io.write((1 << 0) | (1 << 4)); // <atrib value>
-		input_assert(out_command::readattrib, io.read());
-		io.write(0x01); // <no sel timeout value>
-		input_assert(out_command::readnoseltimeout, io.read());
-		*/
+	{		
+		for (uint8_t byte = 0; byte != 17; ++byte)
+		{
+			write_command(io, in_command::nullcmd);
+			uint8_t tpad_data = io.read();
+		}
+		
 		write_command(io, in_command::nullcmd);
+		uint8_t priority_mask = io.read();
+		
+		write_command(io, in_command::nullcmd);
+		input_assert(out_command::bcast_end, io.read());
+	}
+	
+	template <typename T>
+	void process_bcast_select(T&& io)
+	{
+		for (uint8_t byte = 0; byte != 8; ++byte)
+		{
+			write_command(io, in_command::nullcmd);
+			uint8_t selection = io.read();
+		}
+		
+		write_command(io, in_command::nullcmd);
+		uint8_t timer_value = io.read();
+		
+		write_command(io, in_command::nullcmd);
+		input_assert(out_command::bcast_end, io.read());
+	}
+	
+	template <typename T>
+	void process_edit_select(T&& io)
+	{
+		write_command(io, in_command::vfyedit);
+		
+		uint8_t const force_selection = 3;
+		for (uint8_t byte = 0; byte != 8; ++byte)
+		{
+			uint8_t selection = io.read();
+			io.write(force_selection);
+		}
+		
+		uint8_t timer_value = io.read();
+		io.write(timer_value);
+		
+		input_assert(out_command::bcast_end, io.read());
 	}
 	
 	template <typename T>
