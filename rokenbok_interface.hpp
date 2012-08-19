@@ -281,6 +281,8 @@ private:
 	template <typename T>
 	void process_bcast_select(T&& io)
 	{
+		// I think 0xf == no selection
+		
 		//debug_byte(0x00);
 		for (uint8_t byte = 0; byte != tpad_count; ++byte)
 		{
