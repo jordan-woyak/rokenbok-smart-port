@@ -16,8 +16,6 @@
 
 void loop();
 
-//rokenbok_interface rokinf;
-
 smart_port sp;
 
 int main()
@@ -28,48 +26,6 @@ int main()
 	
 	sp.init();
 	
-	while (true)
-		loop();
-}
-
-void loop()
-{
-	uint8_t const read_byte = sp.read();
-	//rokinf.input_data(read_byte);
-	
-	/*
-	char str[3] = "";
-	sprintf(str, "%02x", read_byte);
-	USART_puts(str);
-	*/
-	
-	// write byte
-	uint8_t write_byte = 0x00;
-	
-	if (0xc6 == read_byte)
-	{
-		//USART_puts("presync");
-		write_byte = 0x81; // sync
-	}
-	else if (0xc7 == read_byte)
-	{
-		//USART_puts("sync");
-		write_byte = (1 << 0) | (1 << 4); // <atrib value>
-	}
-	else if (0xc8 == read_byte)
-	{
-		//USART_puts("readattrib");
-		write_byte = 0x01; // <no sel timeout value>
-	}
-	else if (0xcc == read_byte)
-	{
-		//USART_puts("readnoseltimeout");
-		//write_byte = 0x01;
-	}
-	else
-	{
-		//USART_puts(read_byte, HEX); 
-	}
-	
-	sp.write(write_byte);
+	rokenbok_interface rokinf;
+	rokinf.process(sp);
 }

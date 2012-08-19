@@ -71,15 +71,43 @@ public:
 		//active_handler = &main
 	}
 	
-	void input_data(uint8_t byte)
+	// TODO: better fuction name
+	template <typename T>
+	void process(T&& io)
 	{
-		//return;
-		//active_handler->handle_data(byte);
-	}
-	
-	uint8_t output_data()
-	{
-		return 0;
+		while (true)
+		{
+			uint8_t const read_byte = io.read();
+			
+			uint8_t write_byte = 0x00;
+			
+			if (0xc6 == read_byte)
+			{
+				//USART_puts("presync");
+				write_byte = 0x81; // sync
+			}
+			else if (0xc7 == read_byte)
+			{
+				//USART_puts("sync");
+				write_byte = (1 << 0) | (1 << 4); // <atrib value>
+			}
+			else if (0xc8 == read_byte)
+			{
+				//USART_puts("readattrib");
+				write_byte = 0x01; // <no sel timeout value>
+			}
+			else if (0xcc == read_byte)
+			{
+				//USART_puts("readnoseltimeout");
+				//write_byte = 0x01;
+			}
+			else
+			{
+				//USART_puts(read_byte, HEX); 
+			}
+			
+			io.write(write_byte);
+		}
 	}
 	
 	bool get_thumbpad_button(uint8_t pad, thumbpad_button button) const
