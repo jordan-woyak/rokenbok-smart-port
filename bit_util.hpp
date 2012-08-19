@@ -2,7 +2,7 @@
 #pragma once
 
 template <typename T>
-void set_bit(T&& lhs, uint8_t bit, bool rhs)
+void set_bit(T& lhs, uint8_t bit, bool rhs)
 {
 	if (rhs)
 		lhs |= (1 << bit);

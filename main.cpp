@@ -22,7 +22,7 @@ int main()
 {
 	//free(malloc(5));
 	
-	//USART_init();
+	USART_init();
 	
 	sp.init();
 	
