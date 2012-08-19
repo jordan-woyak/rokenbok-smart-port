@@ -1,22 +1,9 @@
 
 #pragma once
 
+#include "bit_util.hpp"
+
 // TODO: optimize more?
-
-template <typename T>
-void set_bit(T&& lhs, uint8_t bit, bool rhs)
-{
-	if (rhs)
-		lhs |= (1 << bit);
-	else
-		lhs &= ~(1 << bit);
-}
-
-template <typename T>
-bool get_bit(T const& lhs, uint8_t bit)
-{
-	return 0 != (lhs & (1 << bit));
-}
 
 bool digital_read(uint8_t pin)
 {
@@ -39,5 +26,5 @@ void enable_output(uint8_t pin, bool value)
 	if (pin < 8)
 		set_bit(DDRD, pin, value);
 	else
-		set_bit(DDRB, pin, value);
+		set_bit(DDRB, pin - 8, value);
 }

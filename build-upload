@@ -3,7 +3,8 @@
 name=rokenbok
 opt=-O3
 
-avr-g++ -std=c++11 $opt -DF_CPU=16000000UL -mmcu=atmega328p -c "$name.cpp" &&
-avr-gcc $opt -mmcu=atmega328p "$name.o" -o "$name" &&
+#avr-g++ -std=c++11 $opt -DF_CPU=16000000UL -mmcu=atmega328p -c main.cpp &&
+avr-g++ -std=c++11 $opt -DF_CPU=16000000UL -mmcu=atmega328p main.cpp &&
+#avr-gcc $opt -mmcu=atmega328p main.o -o "$name" &&
 avr-objcopy -O ihex -R .eeprom "$name" "$name.hex" &&
 avrdude -F -V -c arduino -p ATMEGA328P -P /dev/ttyACM0 -b 115200 -U flash:w:"$name.hex"
