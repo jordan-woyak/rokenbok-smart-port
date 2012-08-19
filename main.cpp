@@ -7,7 +7,7 @@
 #include <util/delay.h>
 //#include <util/setbaud.h>
 
-#include <stdio.h>
+//#include <stdio.h>
 //#include <stdlib.h>
 
 #include "usart.hpp"
@@ -22,7 +22,7 @@ int main()
 {
 	//free(malloc(5));
 	
-	USART_init();
+	//USART_init();
 	
 	smart_port::init();
 	
@@ -35,9 +35,11 @@ void loop()
 	uint8_t const read_byte = smart_port::read();
 	//rokinf.input_data(read_byte);
 	
+	/*
 	char str[3] = "";
 	sprintf(str, "%02x", read_byte);
 	USART_puts(str);
+	*/
 	
 	// write byte
 	uint8_t write_byte = 0x00;
