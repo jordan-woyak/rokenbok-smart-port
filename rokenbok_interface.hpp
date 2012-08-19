@@ -4,6 +4,11 @@
 #include "thumbpad.hpp"
 #include "bit_util.hpp"
 
+__attribute__((always_inline)) void debug_string(const char* str)
+{
+	//USART_puts(str);
+}
+
 // output: (from control deck)
 enum class out_command : uint8_t
 {
@@ -75,38 +80,26 @@ public:
 	template <typename T>
 	void process(T&& io)
 	{
+		//io_adapter<T> io(_io);
+		
 		while (true)
 		{
-			uint8_t const read_byte = io.read();
+			auto const read_cmd = read_command(io);
 			
-			uint8_t write_byte = 0x00;
-			
-			if (0xc6 == read_byte)
+			if (out_command::presync == read_cmd)
 			{
-				//USART_puts("presync");
-				write_byte = 0x81; // sync
+				debug_string("presync");
+				process_presync(io);
 			}
-			else if (0xc7 == read_byte)
+			else if (out_command::bcast_tpads == read_cmd)
 			{
-				//USART_puts("sync");
-				write_byte = (1 << 0) | (1 << 4); // <atrib value>
-			}
-			else if (0xc8 == read_byte)
-			{
-				//USART_puts("readattrib");
-				write_byte = 0x01; // <no sel timeout value>
-			}
-			else if (0xcc == read_byte)
-			{
-				//USART_puts("readnoseltimeout");
-				//write_byte = 0x01;
+				debug_string("bcast_tpads");
+				process_bcast_tpads(io);
 			}
 			else
 			{
-				//USART_puts(read_byte, HEX); 
+				write_command(io, in_command::nullcmd);
 			}
-			
-			io.write(write_byte);
 		}
 	}
 	
@@ -121,6 +114,73 @@ public:
 	}
 	
 private:
+	/*
+	template <typename T>
+	class io_adapter
+	{
+	public:
+		io_adapter(T& _obj)
+			: obj(_obj)
+		{}
+		
+		out_command read()
+		{
+			return (uint8_t)obj.read();
+		}
+		
+		void write(in_command val)
+		{
+			return obj.write((uint8_t)val);
+		}
+		
+	private:
+		T& obj;
+	};
+	*/
+	
+	template <typename T>
+	void process_presync(T&& io)
+	{
+		write_command(io, in_command::sync);
+		input_assert(out_command::sync, io.read());
+		io.write((1 << 0) | (1 << 4)); // <atrib value>
+		input_assert(out_command::readattrib, io.read());
+		io.write(0x01); // <no sel timeout value>
+		input_assert(out_command::readnoseltimeout, io.read());
+		write_command(io, in_command::nullcmd);
+	}
+	
+	template <typename T>
+	void process_bcast_tpads(T&& io)
+	{/*
+		write_command(io, in_command::sync);
+		input_assert(out_command::sync, io.read());
+		io.write((1 << 0) | (1 << 4)); // <atrib value>
+		input_assert(out_command::readattrib, io.read());
+		io.write(0x01); // <no sel timeout value>
+		input_assert(out_command::readnoseltimeout, io.read());
+		*/
+		write_command(io, in_command::nullcmd);
+	}
+	
+	template <typename T>
+	static out_command read_command(T&& io)
+	{
+		return (out_command)io.read();
+	}
+	
+	template <typename T>
+	static void write_command(T&& io, in_command cmd)
+	{
+		io.write((uint8_t)cmd);
+	}
+	
+	void input_assert(out_command cmd, uint8_t val)
+	{
+		//if ((uint8_t)cmd != val)
+			//...
+	}
+	
 	static const uint8_t thumbpad_button_count = 17;
 	
 	uint8_t thumbpad_button_state[thumbpad_button_count];
