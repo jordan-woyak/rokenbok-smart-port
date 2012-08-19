@@ -14,7 +14,7 @@ namespace smart_port
 namespace details
 {
 
-volatile bool frame_end = false;
+//volatile bool frame_end = false;
 
 enum : uint8_t
 {
@@ -52,11 +52,11 @@ void init()
 	enable_output(accio2_pin, false);
 	
 	// enable interrupts (should this be elsewhere?)
-	sei();
+	//sei();
 	
 	// enable INT0 falling edge
-	MCUCR = (1 << ISC01) | (1 << ISC00);
-	EIMSK = (1 << INT0);
+	//MCUCR = (1 << ISC01) | (1 << ISC00);
+	//EIMSK = (1 << INT0);
 }
 
 uint8_t read()
@@ -64,9 +64,17 @@ uint8_t read()
 	using namespace details;
 	
 	// wait for frame end
+	/*
 	while (!frame_end)
 	{}
 	frame_end = false;
+	*/
+	
+	while (digital_read(accio2_pin))
+	{}
+	digital_write(accio_pin, true);
+	while (!digital_read(accio2_pin))
+	{}
 	
 	// read byte
 	digital_write(input_enable_pin, false);
@@ -108,6 +116,7 @@ void write(uint8_t const byte)
 
 }
 
+/*
 // possibly doable without interrupt?
 ISR (INT0_vect)
 {
@@ -121,3 +130,4 @@ ISR (INT0_vect)
 	
 	frame_end = true;
 }
+*/
