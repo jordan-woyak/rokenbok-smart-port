@@ -1,7 +1,7 @@
 
 #pragma once
 
-enum class thumbpad_button_bits
+enum class thumbpad_button
 {
 	select = 0, // change channel
 	shoulder_left = 1, // set last channel

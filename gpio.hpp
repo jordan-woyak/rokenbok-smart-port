@@ -1,48 +1,43 @@
 
 #pragma once
 
-// TODO: optimize?
+// TODO: optimize more?
+
+template <typename T>
+void set_bit(T&& lhs, uint8_t bit, bool rhs)
+{
+	if (rhs)
+		lhs |= (1 << bit);
+	else
+		lhs &= ~(1 << bit);
+}
+
+template <typename T>
+bool get_bit(T const& lhs, uint8_t bit)
+{
+	return 0 != (lhs & (1 << bit));
+}
 
 bool digital_read(uint8_t pin)
 {
 	if (pin < 8)
-		return PIND & (1 << pin);
+		return get_bit(PIND, pin);
 	else
-		return PINB & (1 << (pin - 8));
+		return get_bit(PINB, pin - 8);
 }
 
 void digital_write(uint8_t pin, bool value)
 {
 	if (pin < 8)
-	{
-		if (value)
-			PORTD |= (1 << pin);
-		else
-			PORTD &= ~(1 << pin);
-	}
+		set_bit(PORTD, pin, value);
 	else
-	{
-		if (value)
-			PORTB |= (1 << (pin - 8));
-		else
-			PORTB &= ~(1 << (pin - 8));
-	}
+		set_bit(PORTB, pin - 8, value);
 }
 
 void enable_output(uint8_t pin, bool value)
 {
 	if (pin < 8)
-	{
-		if (value)
-			DDRD |= (1 << pin);
-		else
-			DDRD &= ~(1 << pin);
-	}
+		set_bit(DDRD, pin, value);
 	else
-	{
-		if (value)
-			DDRB |= (1 << (pin - 8));
-		else
-			DDRB &= ~(1 << (pin - 8));
-	}
+		set_bit(DDRB, pin, value);
 }

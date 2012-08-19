@@ -1,88 +1,23 @@
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-
-#include <stdio.h>
-
 #define BAUDRATE 9600
 #define BAUD_PRESCALLER (((F_CPU / (BAUDRATE * 16UL))) - 1)
 
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
 //#include <util/setbaud.h>
+
+//#include <stdio.h>
+#include <stdlib.h>
+
+#include "gpio.hpp"
+#include "usart.hpp"
+#include "thumbpad.hpp"
+#include "rokenbok_interface.hpp"
 
 volatile bool frame_end = false;
 
 void loop();
-
-void USART_init()
-{
-	UBRR0H = (uint8_t)(BAUD_PRESCALLER >> 8);
-	UBRR0L = (uint8_t)(BAUD_PRESCALLER);
-	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-	UCSR0C = ((1 << UCSZ00) | (1 << UCSZ01));
-}
-
-void USART_putc(uint8_t data)
-{
-	while (!(UCSR0A & (1 << UDRE0)));
-		UDR0 = data;
-}
-
-void USART_puts(char const* str)
-{
-	while (*str != 0x00)
-	{
-		USART_putc(*str);
-		++str;
-	}
-	
-	//USART_putc('\r');
-	USART_putc('\n');
-}
-
-bool digital_read(uint8_t pin)
-{
-	if (pin < 8)
-		return PIND & (1 << pin);
-	else
-		return PINB & (1 << (pin - 8));
-}
-
-void digital_write(uint8_t pin, bool value)
-{
-	if (pin < 8)
-	{
-		if (value)
-			PORTD |= (1 << pin);
-		else
-			PORTD &= ~(1 << pin);
-	}
-	else
-	{
-		if (value)
-			PORTB |= (1 << (pin - 8));
-		else
-			PORTB &= ~(1 << (pin - 8));
-	}
-}
-
-void enable_output(uint8_t pin, bool value)
-{
-	if (pin < 8)
-	{
-		if (value)
-			DDRD |= (1 << pin);
-		else
-			DDRD &= ~(1 << pin);
-	}
-	else
-	{
-		if (value)
-			DDRB |= (1 << (pin - 8));
-		else
-			DDRB &= ~(1 << (pin - 8));
-	}
-}
 
 enum : uint8_t
 {
@@ -97,8 +32,12 @@ uint8_t data_pins[8] =
 	6, 7, 8, 9, 10, 11, 12, 13
 };
 
+rokenbok_interface rokinf;
+
 int main()
-{	
+{
+	//free(malloc(5));
+	
 	// everything low by default
 	//PORTB = PORTC = PORTD = 0;
 	
@@ -156,6 +95,8 @@ void loop()
 	}
 	digital_write(input_enable_pin, true);
 	
+	rokinf.input_data(read_byte);
+	
 	/*
 	char str[3] = "";
 	sprintf(str, "%02x", read_byte);
@@ -173,7 +114,7 @@ void loop()
 	else if (0xc7 == read_byte)
 	{
 		//USART_puts("sync");
-		write_byte = (1 << 0); // <atrib value>
+		write_byte = (1 << 0) | (1 << 0); // <atrib value>
 	}
 	else if (0xc8 == read_byte)
 	{
@@ -183,7 +124,7 @@ void loop()
 	else if (0xcc == read_byte)
 	{
 		//USART_puts("readnoseltimeout");
-		write_byte = 0x01;
+		//write_byte = 0x01;
 	}
 	else
 	{
