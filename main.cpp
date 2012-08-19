@@ -18,13 +18,15 @@ void loop();
 
 //rokenbok_interface rokinf;
 
+smart_port sp;
+
 int main()
 {
 	//free(malloc(5));
 	
 	//USART_init();
 	
-	smart_port::init();
+	sp.init();
 	
 	while (true)
 		loop();
@@ -32,7 +34,7 @@ int main()
 
 void loop()
 {
-	uint8_t const read_byte = smart_port::read();
+	uint8_t const read_byte = sp.read();
 	//rokinf.input_data(read_byte);
 	
 	/*
@@ -69,5 +71,5 @@ void loop()
 		//USART_puts(read_byte, HEX); 
 	}
 	
-	smart_port::write(write_byte);
+	sp.write(write_byte);
 }

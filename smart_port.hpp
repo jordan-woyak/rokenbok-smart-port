@@ -8,11 +8,11 @@
 // TODO: turn off pull-ups when switching data pins to input?
 // TODO: ignore first frame end (it might be missing starting bits)
 
-namespace smart_port
+class smart_port
 {
-
-namespace details
-{
+private:
+//namespace details
+//{
 
 //volatile bool frame_end = false;
 
@@ -29,11 +29,13 @@ uint8_t data_pins[8] =
 	6, 7, 8, 9, 10, 11, 12, 13
 };
 
-}
+//}
+
+public:
 
 void init()
 {
-	using namespace details;
+	//using namespace details;
 	
 	// input enable (active low)
 	digital_write(input_enable_pin, true);
@@ -61,7 +63,7 @@ void init()
 
 uint8_t read()
 {
-	using namespace details;
+	//using namespace details;
 	
 	// wait for frame end
 	/*
@@ -72,15 +74,20 @@ uint8_t read()
 	
 	while (digital_read(accio2_pin))
 	{}
+	
+	// seems to be fine up to 500us
+	//_delay_us(300);
+	
 	digital_write(accio_pin, true);
-	while (!digital_read(accio2_pin))
-	{}
+	
+	// seems to need at least 350us
+	//_delay_us(500);
 	
 	// read byte
 	digital_write(input_enable_pin, false);
 	
-	// seems to need at least 350us
-	_delay_us(500);
+	while (!digital_read(accio2_pin))
+	{}
 	
 	uint8_t byte = 0;
 	for (uint8_t i = 0; i != 8; ++i)
@@ -96,7 +103,7 @@ uint8_t read()
 
 void write(uint8_t const byte)
 {
-	using namespace details;
+	//using namespace details;
 	
 	// prepare output byte
 	for (uint8_t i = 0; i != 8; ++i)
@@ -114,7 +121,7 @@ void write(uint8_t const byte)
 	digital_write(accio_pin, false);
 }
 
-}
+};
 
 /*
 // possibly doable without interrupt?
