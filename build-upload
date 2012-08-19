@@ -1,7 +1,7 @@
 #!/bin/bash
 
 name=rokenbok
-opt=-O3
+opt=-Os
 
 #avr-g++ -std=c++11 $opt -DF_CPU=16000000UL -mmcu=atmega328p -c main.cpp &&
 avr-g++ -std=c++11 $opt -DF_CPU=16000000UL -mmcu=atmega328p main.cpp -o "$name" &&
