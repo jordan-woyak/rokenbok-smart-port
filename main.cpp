@@ -7,8 +7,8 @@
 #include <util/delay.h>
 //#include <util/setbaud.h>
 
-//#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h>
+//#include <stdlib.h>
 
 #include "usart.hpp"
 #include "rokenbok_interface.hpp"
@@ -16,13 +16,15 @@
 
 void loop();
 
-rokenbok_interface rokinf;
+//rokenbok_interface rokinf;
 
 int main()
 {
 	//free(malloc(5));
 	
 	USART_init();
+	
+	smart_port::init();
 	
 	while (true)
 		loop();
@@ -31,13 +33,11 @@ int main()
 void loop()
 {
 	uint8_t const read_byte = smart_port::read();
-	rokinf.input_data(read_byte);
+	//rokinf.input_data(read_byte);
 	
-	/*
 	char str[3] = "";
 	sprintf(str, "%02x", read_byte);
 	USART_puts(str);
-	*/
 	
 	// write byte
 	uint8_t write_byte = 0x00;
@@ -50,7 +50,7 @@ void loop()
 	else if (0xc7 == read_byte)
 	{
 		//USART_puts("sync");
-		write_byte = (1 << 0) | (1 << 0); // <atrib value>
+		write_byte = (1 << 0) | (1 << 4); // <atrib value>
 	}
 	else if (0xc8 == read_byte)
 	{
