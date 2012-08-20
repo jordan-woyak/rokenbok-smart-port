@@ -14,9 +14,9 @@
 
 void debug_byte(uint8_t byte)
 {
-	//char str[3] = "";
-	//sprintf(str, "%02x", byte);
-	//USART_puts(str);
+	char str[3] = "";
+	sprintf(str, "%02x", byte);
+	USART_puts(str);
 }
 
 // output: (from control deck)
@@ -148,7 +148,7 @@ public:
 				}
 				else
 				{
-					debug_byte((uint8_t)read_cmd);
+					//debug_byte((uint8_t)read_cmd);
 					is_synced = false;
 				}
 			}
@@ -201,7 +201,7 @@ private:
 		io.write((1 << attrib_bit::sync)
 			| (1 << attrib_bit::suppress_select)
 			| (1 << attrib_bit::edit_tpads)
-			//| (1 << attrib_bit::edit_select)
+			| (1 << attrib_bit::edit_select)
 		);
 		// TODO: not actually receiving readattrib
 		// actually getting 0x50 or 0xae (wtf?)
