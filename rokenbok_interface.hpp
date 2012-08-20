@@ -114,7 +114,7 @@ public:
 				debug_string("presync");
 				process_presync(io);
 			}
-			else if (is_synced)
+			else// if (is_synced)
 			{	
 				if (out_command::bcast_tpads == read_cmd)
 				{
@@ -203,6 +203,8 @@ private:
 			| (1 << attrib_bit::edit_tpads)
 			//| (1 << attrib_bit::edit_select)
 		);
+		// TODO: not actually receiving readattrib
+		// actually getting 0x50 or 0xae (wtf?)
 		input_assert(out_command::readattrib, io.read());
 		
 		io.write(0x01); // <no sel timeout value>
@@ -245,11 +247,13 @@ private:
 		
 		bool dpad_up = false;
 		
+		//debug_byte(0x00);
+		
 		for (uint8_t byte = 0; byte != tpad_byte_count; ++byte)
 		{
 			uint8_t tpad_data = io.read();
 			
-			debug_byte(tpad_data);
+			//debug_byte(tpad_data);
 			
 			// OK, having more than 3 bits set in any bytes causes dsync
 			// even when the bits were received as set
