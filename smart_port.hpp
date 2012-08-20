@@ -8,7 +8,7 @@
 // TODO: turn off pull-ups when switching data pins to input?
 // TODO: ignore first frame end (it might be missing starting bits)
 
-#define SMART_PORT_USE_INTERRUPT
+//#define SMART_PORT_USE_INTERRUPT
 
 namespace smart_port_details
 {

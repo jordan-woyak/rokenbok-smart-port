@@ -148,7 +148,7 @@ public:
 				}
 				else
 				{
-					//debug_byte((uint8_t)read_cmd);
+					debug_byte((uint8_t)read_cmd);
 					is_synced = false;
 				}
 			}
@@ -259,21 +259,24 @@ private:
 			// even when the bits were received as set
 			// TODO: why?
 			
-			if (thumbpad_button::dpad_up == byte)
-				tpad_data = 0;
+			// sometimes some of the 4 high bits (virtual pads) are set
+			// TODO: why?
+			
+			//if (thumbpad_button::dpad_up == byte)
+				//tpad_data &= ~0x01;
 				
-			//if (byte == 16)
-			tpad_data &= 0x07;
+			//if (byte != 16)
+			tpad_data &= 0x0f;
 				
 			io.write(tpad_data);
 		}
 		
-		// TODO: having more than 5 (or 4?) bits in mask set causes desync
+		// TODO: having more than 5 (or 4? or 6?) bits in mask set causes desync
 		// zero still allows base to see changes :/
 		
 		uint8_t priority_mask = io.read();
 		//debug_byte(priority_mask);
-		io.write(0xf);
+		io.write(0x01);
 		
 		auto rd = io.read();
 		//debug_byte(rd);
