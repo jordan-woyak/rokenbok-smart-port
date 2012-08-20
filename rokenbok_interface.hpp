@@ -14,9 +14,9 @@
 
 void debug_byte(uint8_t byte)
 {
-	char str[3] = "";
-	sprintf(str, "%02x", byte);
-	USART_puts(str);
+	//char str[3] = "";
+	//sprintf(str, "%02x", byte);
+	//USART_puts(str);
 }
 
 // output: (from control deck)
@@ -273,7 +273,7 @@ private:
 		
 		uint8_t priority_mask = io.read();
 		//debug_byte(priority_mask);
-		io.write(0x00);
+		io.write(0xf);
 		
 		auto rd = io.read();
 		//debug_byte(rd);

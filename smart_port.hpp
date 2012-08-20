@@ -103,10 +103,14 @@ uint8_t read()
 	digital_write(input_enable_pin, false);
 	
 	// seems to need at least 350us
-	//_delay_us(500);
 	// or just wait for accio2 to go high I think
+	// TODO: do which?
+#if 1
+	_delay_us(500);
+#else
 	while (!digital_read(accio2_pin))
 	{}
+#endif
 	
 	uint8_t byte = 0;
 	for (uint8_t i = 0; i != 8; ++i)
