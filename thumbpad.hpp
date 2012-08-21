@@ -7,6 +7,8 @@
 // disconnected (non-virtual) controller's buttons show as pressed
 // except for the "spare" byte
 
+static const uint8_t thumbpad_button_count = 17;
+
 enum thumbpad_button : uint8_t
 {
 	select = 0, // change channel

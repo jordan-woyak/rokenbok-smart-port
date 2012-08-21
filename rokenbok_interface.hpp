@@ -199,7 +199,7 @@ private:
 		input_assert(out_command::sync, io.read());
 		
 		io.write((1 << attrib_bit::sync)
-			| (1 << attrib_bit::suppress_select)
+			//| (1 << attrib_bit::suppress_select)
 			| (1 << attrib_bit::edit_tpads)
 			| (1 << attrib_bit::edit_select)
 		);
@@ -243,6 +243,8 @@ private:
 	template <typename T>
 	void process_edit_tpads(T&& io)
 	{
+		fill_pad_data(thumbpad_button_state);
+		
 		write_command(io, in_command::vfyedit);
 		
 		bool dpad_up = false;
@@ -257,16 +259,19 @@ private:
 			
 			// OK, having more than 3 bits set in any bytes causes dsync
 			// even when the bits were received as set
-			// TODO: why?
+			// TODO: why? actually, is that still an issue?
 			
 			// sometimes some of the 4 high bits (virtual pads) are set
 			// TODO: why?
 			
 			//if (thumbpad_button::dpad_up == byte)
 				//tpad_data &= ~0x01;
+			
+			tpad_data &= 0x0f;
+			tpad_data |= thumbpad_button_state[byte];
 				
 			//if (byte != 16)
-			tpad_data &= 0x0f;
+			//tpad_data &= 0x0f;
 				
 			io.write(tpad_data);
 		}
@@ -317,10 +322,12 @@ private:
 		write_command(io, in_command::vfyedit);
 		
 		uint8_t const force_selection = 7;
+		uint8_t const force_controller = 4;
+		
 		for (uint8_t byte = 0; byte != tpad_count; ++byte)
 		{
 			uint8_t selection = io.read();
-			if (0 == byte)
+			if (force_controller == byte)
 				selection = force_selection;
 			io.write(selection);
 		}
@@ -374,8 +381,6 @@ private:
 			debug_byte(val);
 		}
 	}
-	
-	static const uint8_t thumbpad_button_count = 17;
 	
 	uint8_t thumbpad_button_state[thumbpad_button_count];
 	
