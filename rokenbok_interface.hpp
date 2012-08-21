@@ -207,7 +207,7 @@ private:
 		// actually getting 0x50 or 0xae (wtf?)
 		input_assert(out_command::readattrib, io.read());
 		
-		io.write(0x01); // <no sel timeout value>
+		io.write(0x00); // <no sel timeout value>
 		input_assert(out_command::readnoseltimeout, io.read());
 		
 		is_synced = true;
@@ -321,7 +321,7 @@ private:
 	{
 		write_command(io, in_command::vfyedit);
 		
-		uint8_t const force_selection = 7;
+		uint8_t const force_selection = 0;
 		uint8_t const force_controller = 4;
 		
 		for (uint8_t byte = 0; byte != tpad_count; ++byte)
