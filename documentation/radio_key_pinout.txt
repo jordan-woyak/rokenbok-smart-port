@@ -1,0 +1,20 @@
+From normal view of vehicle key slot:
+
+Measured with ok batteries:
+
+side contacts left to right:
+green loader:
+1 - NC
+2 - GND
+
+yellow loader:
+1 - VCC 1.15v
+2 - GND
+
+back contacts left to right:
+1 - VCC 4.25v (key value activator)
+2 - VCC 4.25v (key value activator)
+3 - GND
+4 - VCC 3.92v
+5 - VCC 4.25v (key detect?)
+6 - VCC 4.25v (key value activator)
