@@ -17,10 +17,10 @@
 
 nunchuk nc;
 
-uint16_t const timer_start = 4;
-uint16_t const timer_mid = 6;
-uint16_t timer = timer_start;
-uint16_t const timer_wrap = 8;
+//uint16_t const timer_start = 4;
+//uint16_t const timer_mid = 6;
+//uint16_t timer = timer_start;
+//uint16_t const timer_wrap = 8;
 
 template <typename T>
 T clamp(T val, T min, T max)
@@ -106,8 +106,8 @@ void fill_pad_data(uint8_t(&buttons)[thumbpad_button_count])
 	// allow other pads to control same vehicle
 	set_bit(buttons[mode], modify_controller, true);
 	
-	if (timer_wrap == ++timer)
-		timer = timer_start;
+	//if (timer_wrap == ++timer)
+	//	timer = timer_start;
 	//++timer;
 }
 

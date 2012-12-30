@@ -321,7 +321,7 @@ private:
 	{
 		write_command(io, in_command::vfyedit);
 		
-		uint8_t const force_selection = 0;
+		uint8_t const force_selection = 1;
 		uint8_t const force_controller = 4;
 		
 		for (uint8_t byte = 0; byte != tpad_count; ++byte)
