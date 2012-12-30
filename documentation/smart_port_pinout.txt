@@ -1,0 +1,201 @@
+/ Rokenbok Classic Command Deck Smart Port Documentation /
+
+Overview:
+The smart port is located on the right side of the command deck in the form of a 6-pin mini-DIN (aka. PS/2) female port.
+However, the communication protocol used is very unlike that of PS/2 devices and will not be interfaceable with a computer's PS/2 port.
+
+The smart port employs a protocol extremely similar to that of an SPI bus where the Command Deck is the master.
+The bus is essentially SPI with slave clock stretching.
+
+# Physical #
+
+Pinout:
+Pins are numbered right to left, bottom-up from the front of the female connector.
+
+number - usage - driven by - rokenbok patent name - logic level - active level
+1 - serial clock - master - SK - 5v - HIGH
+2 - MISO - slave - SI - 5v - HIGH
+3 - MOSI - master - SO - 5v - HIGH
+4 - frame end - master - ACCIO2 - 10v[1] - LOW
+5 - slave ready - slave (master pull-up) - ACCIO - LOW
+6 - ground - X - X - X - X
+
+[1] While the patent states voltage of ACCI2 should be 9v I have measured at least 10v2.
+It possibly comes from DC input, which I've measured at 11v6.
+Being at a high voltage, the intent is to provide data and power to the slave.
+
+# Datalink #
+
+Like SPI, 8-bit bytes are shifted to and from master and slave simultaneously, most significant bit first.
+
+Questions:
+To remain synced does ACCIO need to be pulled low for the entire frame? (probably not)
+Does clock rise/fall when synced and deck is waiting for ACCIO to go low?
+Does ACCIO2 go low? (I would hope not)
+Can slave clock stretch when not synced? (I bet so)
+
+The process for sending a byte is as follows:
+
+The slave drives ACCIO low, signaling its readiness to master.
+Master drives ACCIO2 high, which, being at 10v, is also intended to provide power to the slave.
+SK rises and falls 8 times. Inputs (SI and SO) are sampled on the rising edge of SK.
+Master drives ACCIO2 low, marking the end of the frame.
+ACCIO2 stays low for something like 500 microseconds, which appears to be the timeframe for slave to stop driving ACCIO low.
+When slave is ready it again drives ACCIO low for sending/receiving the next byte.
+Master will only wait for around 6 milliseconds[2] for ACCIO to go low again before deciding to continue without asking.
+
+[2] When slave induces significant delays the entire system slows down. This is visible on the controller's number selection "screen saver".
+
+Without an active slave, master will broadcast various data, ignoring the state of ACCIO until it is low when ACCIO2 rises.
+
+# Application #
+
+As you probably know, the command deck can make use of 4 physical controllers.
+It can also handle input of 4 "virtual" controllers. Inputs of all can be read and modified by the slave.
+Each controller has 17 binary states, one for each physical button/switch (12) and a few currently unused ones.
+
+Button state of all controllers is manipulated as an array of 17 bytes.
+A byte holds the states of all controllers for a particular button/switch.
+Bits 0-3 for the physical controllers and 4-7 for the virtual.
+Unplugged physical controllers are seen as if all states are "pressed" except for the "spare" state.
+Default state of virtual controllers have all states as "unpressed".
+Either the first 16 bits set or all unset both seem to be an interpretation by the master as unplugged.
+
+For each state: 1 = pressed, 0 = unpressed.
+
+byte - purpose
+0 - select
+1 - left trigger (toggle between last used channels)
+2 - mode (pressed = allow sharing channel)
+3 - (reserved 14)
+4 - (is16SEL PAD?)
+5 - dpad up
+6 - dpad down
+7 - dpad right
+8 - dpad left
+9 - button a
+10 - button b
+11 - button x
+12 - button y
+13 - (reserved 12)
+14 - (reserved 13)
+15 - right trigger (slow vehicle)
+16 - (spare)
+
+After the 17 controller bytes, a "priority byte" is always dealt with.
+A bit is supposedly set to signify that the input state for that controller has changed.
+This is apparently used to determine when radio packets need to be sent.
+(I have not yet been able to manipulate this value with expected results)
+
+The selection of each controller is manipulated as an array of 8 bytes.
+1 byte for each controller, first physical, then virtual.
+Possible values are 0-7 for channels 1-8 or 15 (0xf) for no selection.
+
+TODO: double check that 0xf is no selection.
+
+A byte is also maintained to determine which controllers do not timeout.
+(timeout happens when not pressing any buttons for a while)
+(The cycling selection LEDs on the controller happen at timeout)
+Like each of the controller bytes, bits 0-3 are for physical controllers and 4-7 for virtual.
+Disabling the timeout may be useful when the slave also wants to override selections.
+
+Master maintains an "attrib" byte containing flags for enabling/disabling various paths of logic.
+The default state of the attrib byte can be considered as zero.
+The slave may modify the master's attrib byte at certain times.
+
+attrib byte:
+bit - name
+0 - sync
+1 - notsync
+2 - edit_tpads
+3 - edit_select
+4 - suppress_select
+5 - pkt_inject
+6 - suppress_radio
+7 - full_rf_null
+
+Bits 0 and 1 (sync and notsync) must be set to 1 and 0 respectively in order to make use of any other flags.
+
+Setting bit 2 (edit_tpads) instructs master to periodically send (and afterward receive) pre-processed controller data for modification (edit_tpads command).
+
+Setting bit 3 (edit_select) instructs master to periodically send (and afterward receive) the channel selections of each controller for modification (edit_select command).
+
+Setting bit 4 (suppress_select) instructs master to ignore any pressing of controller select buttons. This is useful in combination with edit_select.
+
+Setting bit 5 (pkt_inject) apparently instructs master to periodically request radio packets for sending over the air as is.
+
+Setting bit 6 (suppress_radio) instructs master to inhibit all radio transmission.
+
+Setting bit 7 (full_rf_null) apparently instructs master to send null packets over the air if one is not received from slave.
+
+The master controls communication by sending various messages consisting of a number of bytes.
+Certain responses are then expected from the slave.
+The first byte of a message from the master is some command, identifying the message.
+
+Some values used by the master (some are message starting commands):
+0x00 nullcmd
+0xc0 bcast_tpads
+0xc1 bcast_select
+0xc2 bcast_end 
+0xc3 edit_tpads
+0xc4 edit_select
+0xc5 edit_end
+0xc6 presync
+0xc7 sync (master)
+0xc8 readattrib
+0xc9 noins?
+0xca askins?
+0xcb readreply?
+0xcc readnoseltimeout
+0xcd noradiopkt?
+0xce haveradiopkt
+
+Some values used by the slave:
+0x00 nullcmd
+0x80 vfyedit
+0x81 sync (slave)
+0x82 noins?
+0x83 waitins?
+
+Possible messages intiated by master:
+(The send and receive on a line represent full-duplex transactions)
+
+send: <nullcmd> receive: <nullcmd>
+
+send: <presync> receive: <nullcmd>
+send: <sync (master)> receive: <sync (slave)>
+send: <readattrib> receive: previously described attrib byte
+send: readnoseltimeout receive: no selection timeout TODO: describe
+
+(setting the edit_tpads bit of attrib seems to inhibit this message)
+send: <bcast_tpads> receive <nullcmd>
+send: 17 controller bytes receive: <nullcmd> x17
+send: priority byte TODO: describe receive: <nullcmd>
+send: <bcast_end> receive: <nullcmd>
+
+(setting the edit_select bit of attrib likely inhibits this message)
+send: <bcast_select> receive: <nullcmd>
+send: 8 controller selection bytes TODO: describe receive: <nullcmd> x8
+send: timer value TODO: describe receive: <nullcmd>
+send: <bcast_end> receive: <nullcmd>
+
+(setting the edit_tpads bit of attrib enables this message)
+send: <edit_tpads> receive <nullcmd>
+send: first controller byte receive: <vfyedit>
+send: last 16 controller bytes receive: modified first 16 controller bytes
+send: priority byte receive: last controller byte
+send: <bcast_end> receive: modified priority byte
+
+(setting the edit_select bit of attrib enables this message)
+send: <edit_select> receive: <nullcmd>
+send: first controller selection byte receive: <vfyedit>
+send: last 7 controller selection bytes receive: first 7 controller selection bytes
+send: timer value receive: last controller selection byte
+send: <bcast_end> receive: <nullcmd> (does not seem to modify timer value)
+
+(I have not yet attempted to interpret the meaning of the packet data)
+TODO: does suppress_radio inhibit these from being sent?
+send: <haveradiopkt> receive: <nullcmd>
+send: 2 radio packet bytes receive: <nullcmd> x2
+
+TODO: messages when pkt_inject, full_rf_null are set?

@@ -1,0 +1,12 @@
+DB9 Connector Male End Pinout:
+Left to right, top(long) row then bottom row:
+
+1 - VCC?
+2 - DATA?
+3 - DATA?
+4 - DATA?
+5 - GND?
+6 - NC?
+7 - NC?
+8 - NC?
+9 - NC?
